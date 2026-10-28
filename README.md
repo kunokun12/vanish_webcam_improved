@@ -7,13 +7,17 @@ VanishCam is a Windows webcam app that makes you disappear from a live video fee
 
 Video is processed locally. VanishCam does not record or upload your camera feed. The first source-code launch may download Python packages and MediaPipe models.
 
-## Quick start: Windows executable
+## Quick start: Windows
 
-Download the packaged [VanishCam.exe](https://nicoaauriemma.vercel.app/shop), then double-click it.
+This repository currently contains the source code, not a prebuilt `VanishCam.exe`. The recommended way to run the latest version is to [run it from source](#run-from-source):
 
-The executable starts in Unity Capture virtual-camera mode. Install [Unity Capture](https://github.com/schellingb/UnityCapture) first if you want to send the result to another application such as Discord, Zoom, or OBS.
+```powershell
+git clone https://github.com/kunokun12/vanish_webcam_improved.git
+cd vanish_webcam_improved
+AVVIA_LOCALE.bat
+```
 
-The executable may not contain the newest source changes. Use the source instructions below for the latest version.
+If you already have a trusted prebuilt `VanishCam.exe`, Python is not required. The packaged app is configured to use [Unity Capture](https://github.com/schellingb/UnityCapture) for virtual-camera output by default, so install Unity Capture before launching it. To build your own executable, use `BUILD_WINDOWS.bat` as described [below](#build-the-windows-executable).
 
 ## Run from source
 
