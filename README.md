@@ -1,77 +1,144 @@
-# VanishCam — webcam disappearance effects
+# VanishCam
 
-Video is processed on your computer. It is neither recorded nor sent to a server. The preview window and virtual camera show only the video and effects, without overlaid menus, instructions, or text.
+VanishCam is a Windows webcam app that makes you disappear from a live video feed. It supports two effects:
 
-For step-by-step instructions in English and Italian, see the [user guide](USER_GUIDE_EN_IT.md).
+- **Naruto Vanish** — joined hands trigger smoke and a substitution log.
+- **Goku Vanish** — two fingers touching your forehead trigger a teleport effect.
 
-## ☕ Buy me a coffee
+Video is processed locally. VanishCam does not record or upload your camera feed. The first source-code launch may download Python packages and MediaPipe models.
 
-If you like this project and want to support it, you can buy me a coffee through [PayPal](https://paypal.me/nicovic17) or [Revolut](https://revolut.me/nicoauriemma).
+## Quick start: Windows executable
 
-## Download for Windows
+Download the packaged [VanishCam.exe](https://nicoaauriemma.vercel.app/shop), then double-click it.
 
-[Download VanishCam.exe]( https://nicoaauriemma.vercel.app/shop ) and double-click it to run the app. You do not need to install Python. The packaged EXE starts in **Unity Capture virtual-camera mode** by default; use `AVVIA_LOCALE.bat` for the source/local workflow.
+The executable starts in Unity Capture virtual-camera mode. Install [Unity Capture](https://github.com/schellingb/UnityCapture) first if you want to send the result to another application such as Discord, Zoom, or OBS.
 
-The published EXE may predate the latest source changes. To use the current modes, run the local scripts or rebuild the EXE from these sources.
+The executable may not contain the newest source changes. Use the source instructions below for the latest version.
 
-## Getting started
+## Run from source
 
-1. Double-click `AVVIA_LOCALE.bat`.
-2. In the webcam selector, click the correct camera or press its number. This is useful when Windows exposes a built-in camera, OBS Virtual Camera, and other devices at different indices.
-3. In the start menu, choose **Naruto Vanish** or **Goku Vanish** with the mouse or the `1` or `2` key.
-4. Step out of the camera frame for 4 seconds while the background is captured. The terminal tells you when you can step back in.
+### Requirements
 
-**Goku:** Hold your index and middle fingers against your forehead for about 0.25 seconds. The hand may face sideways, as in the anime pose. The detector uses the last visible finger segments and a forehead contact zone, so exact fingertip separation is not required when the fingertips are occluded. Animated vertical comic-style lines run across your silhouette during the teleport effect. The supplied `assets/goku-teleport-sound.mp3` plays when you vanish or reappear. To reappear, lower your hand, then repeat the gesture. You can also use `V` to disappear and `R` to reappear manually. Press `G` to see the hand landmarks, forehead anchor, pose conditions, and hold timer.
+- Windows 10 or later
+- Python 3
+- A working webcam
+- Internet access on the first launch so the launcher can install dependencies and download models
 
-The former Normal Vanish mode is currently hidden from the mode selector.
+Clone the repository and start the local preview:
 
-**Naruto Vanish:** Bring your palms together in front of the webcam, with your fingers side by side rather than interlaced. Keep both hands visible. As soon as the gesture is recognized, you vanish in a cloud of smoke and a wooden log appears, falls, and remains visible until you press `R`. No microphone is needed. Naruto mode uses `hand_landmarker.task` to track both hands. `assets/vanish.MP3` plays through your computer speakers when the disappearance starts, including when triggered with `V`. You can trigger it again after pressing `R`.
+```powershell
+git clone https://github.com/kunokun12/vanish_webcam_improved.git
+cd vanish_webcam_improved
+AVVIA_LOCALE.bat
+```
 
-To start a mode without the menu:
+`AVVIA_LOCALE.bat` creates `.venv-local` automatically and installs the packages from `requirements.txt`. The app then opens a camera selector followed by an effect selector. Choose a camera, choose **Naruto Vanish** or **Goku Vanish**, and step out of frame for about four seconds while the background is captured.
+
+The required MediaPipe models are downloaded into `models/` the first time each effect is used. The models and generated build files are intentionally excluded from Git.
+
+## Choose a launch mode
+
+- `AVVIA_LOCALE.bat` — normal local preview window.
+- `AVVIA_OBS.bat` — clean preview for OBS Window Capture; virtual-camera output is disabled.
+- `AVVIA_VIRTUAL.bat` — send the result through Unity Capture.
+- `BUILD_WINDOWS.bat` — build a new `dist/VanishCam.exe`.
+
+You can skip the selectors by passing options:
 
 ```powershell
 AVVIA_LOCALE.bat --mode naruto
 AVVIA_LOCALE.bat --mode goku
-```
-
-## Virtual camera and OBS
-
-If [OBS Studio](https://obsproject.com/) is installed, the app automatically tries to open **OBS Virtual Camera**. The terminal shows the device name. Use `AVVIA_VIRTUAL.bat` to start **Unity Capture** automatically. It shows the camera selector first, then the effect-mode selector, and uses the camera you choose. Select **Unity Video Capture** in the app that will receive the video.
-
-To use the effect in an OBS scene, run `AVVIA_OBS.bat`, add a **Window Capture** source, and select **Webcam - Preview**. This is the clean OBS-facing preview: it contains the webcam and effects, but never diagnostic markers. The optional `G` gesture-debug view opens separately as **Webcam - Debug Preview**, so it cannot contaminate the OBS source. Then start the virtual camera from OBS. Alternatively, use [Unity Capture](https://github.com/schellingb/UnityCapture) as a separate virtual video source:
-
-```powershell
-AVVIA_VIRTUAL.bat
-```
-
-You can skip either selector when needed, for example `AVVIA_VIRTUAL.bat --mode goku` or `AVVIA_VIRTUAL.bat --camera 1 --mode goku`.
-
-OBS has only one virtual camera. Do not use it as both an OBS input and output at the same time. See the [pyvirtualcam documentation](https://github.com/letmaik/pyvirtualcam#supported-virtual-cameras).
-
-## Controls
-
-- `SPACE`: capture a new background.
-- `R`: make the person reappear.
-- `V`: manually start the selected mode's effect.
-- `G`: toggle the hand-gesture debug overlay (landmarks and detection status).
-- `M`: return to the mode-selection menu.
-- `F`: toggle fullscreen.
-- `Q` or `ESC`: quit and release the cameras.
-
-In Goku mode, `V` starts the disappearance manually and `R` starts reappearance when hidden.
-
-You can change the camera, resolution, and maximum virtual-output FPS:
-
-```powershell
 AVVIA_LOCALE.bat --camera 1 --width 1280 --height 720 --fps 30
 ```
 
-Passing `--camera N` skips the webcam selector. If the selector is closed, press `Q` or `Esc` to quit.
+`--camera N` uses a specific webcam index. Omit it to show the camera selector.
 
-To troubleshoot gesture recognition without adding text to the video, pass `--gesture-debug`. Diagnostic information appears only in the terminal.
+## Effects and gestures
 
-## Visual assets
+### Naruto Vanish
 
-The [wooden log](assets/substitution_log.png) is an original illustration generated with ImageGen using the supplied image as a visual reference. Smoke is drawn in real time by `naruto_effect.py` so it follows the person's position and scales with the video. We also considered a [CC0 smoke sprite sheet](https://opengameart.org/content/smoke-sprite-sheet), but the procedural animation adapts better to dynamic positioning without an additional asset. No anime frames or assets are included in the project.
+1. Keep both hands visible.
+2. Bring your palms together with your fingers side by side; do not interlace them.
+3. The app replaces you with smoke and a falling wooden log.
+4. Press `R` to reappear.
 
-Goku mode uses `face_landmarker.task` to estimate the forehead position and `hand_landmarker.task` to track the fingers. The teleport's visual trace is drawn in code, without anime frames.
+The effect sound is `assets/vanish.MP3`.
+
+### Goku Vanish
+
+1. Hold your index and middle fingers against your forehead for about 0.25 seconds.
+2. You disappear with a teleport effect.
+3. Lower your hand, then repeat the gesture to reappear.
+
+The effect sound is `assets/goku-teleport-sound.mp3`. The hand can face sideways; good lighting and a clear view of the hand improve recognition.
+
+## Controls
+
+These keys work while the webcam window is active:
+
+- `SPACE` — capture a new background
+- `R` — reappear
+- `V` — trigger the selected effect manually
+- `G` — show or hide gesture diagnostics
+- `M` — return to the effect selector
+- `F` — toggle fullscreen
+- `Q` or `ESC` — quit
+
+Gesture diagnostics are shown in a separate debug window or in the terminal. They are not sent to the clean preview or virtual-camera output.
+
+## OBS and virtual-camera setup
+
+### OBS Window Capture
+
+1. Run `AVVIA_OBS.bat`.
+2. In OBS, add a **Window Capture** source.
+3. Select **Webcam - Preview**.
+4. Start the OBS Virtual Camera if you need to send the scene to another application.
+
+The preview contains the webcam and effects but no menus or debug markers. If you press `G`, diagnostics appear separately as **Webcam - Debug Preview**.
+
+### Unity Capture
+
+1. Install Unity Capture.
+2. Run `AVVIA_VIRTUAL.bat`.
+3. Select **Unity Video Capture** in the receiving application.
+
+Do not use the same virtual camera as both an OBS input and an OBS output. If a virtual camera is already running, stop it before launching another backend. See the [pyvirtualcam supported backends](https://github.com/letmaik/pyvirtualcam#supported-virtual-cameras) for more information.
+
+## Troubleshooting
+
+### No camera appears
+
+Close applications that may already be using the webcam, check Windows camera permissions, and run the launcher again. You can also try a specific index, such as `--camera 1`.
+
+### The virtual camera cannot start
+
+Install Unity Capture or OBS Studio, make sure the corresponding virtual camera is available, and stop any other application currently using it. Use `AVVIA_OBS.bat` if you only need OBS Window Capture.
+
+### Gestures are not recognized
+
+Improve the lighting, keep the hands inside the frame, and use `G` to inspect recognition diagnostics. For Goku mode, hold the two fingers against the forehead briefly instead of moving through the pose quickly.
+
+### The first launch is slow
+
+This is expected. The launcher may create the virtual environment, install dependencies, and download the required MediaPipe models. Later launches reuse those files.
+
+## Build the Windows executable
+
+Install Python 3, then run:
+
+```powershell
+BUILD_WINDOWS.bat
+```
+
+The script installs PyInstaller when needed, downloads missing models, builds the application, and runs its self-test. The result is written to `dist/VanishCam.exe`. The `build/` and `dist/` directories are generated artifacts and are not committed to the repository.
+
+## Development
+
+Install the dependencies in the local environment, then run the test suite with:
+
+```powershell
+.venv-local\Scripts\python.exe -m unittest discover -p "test_*.py"
+```
+
+The main application is in `vanish_cam.py`. Naruto effect rendering is in `naruto_effect.py`, and audio playback is in `vanish_sound.py`.
