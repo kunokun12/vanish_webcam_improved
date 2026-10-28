@@ -39,23 +39,23 @@ FINGERTIP_INDICES = (8, 12, 16, 20)
 def load_meme(path):
     image = cv2.imread(str(path), cv2.IMREAD_COLOR)
     if image is None:
-        raise FileNotFoundError(f"Impossibile leggere l'immagine: {path}")
+        raise FileNotFoundError(f"Could not read image: {path}")
     return image
 
 
 def open_camera(index=0):
-    """Apre la webcam provando i backend Windows e attende il primo frame."""
+    """Open the webcam using Windows backends and wait for the first frame."""
     backends = (
         ("DirectShow", cv2.CAP_DSHOW),
         ("Media Foundation", cv2.CAP_MSMF),
-        ("automatico", cv2.CAP_ANY),
+        ("automatic", cv2.CAP_ANY),
     )
     attempts = []
 
     for backend_name, backend in backends:
         cap = cv2.VideoCapture(index, backend)
         if not cap.isOpened():
-            attempts.append(f"{backend_name}: non disponibile")
+            attempts.append(f"{backend_name}: unavailable")
             cap.release()
             continue
 
@@ -71,14 +71,14 @@ def open_camera(index=0):
                 return cap, frame
             time.sleep(0.05)
 
-        attempts.append(f"{backend_name}: aperta, ma nessun frame ricevuto")
+        attempts.append(f"{backend_name}: opened, but no frame received")
         cap.release()
 
     details = "; ".join(attempts)
     raise RuntimeError(
-        "Non riesco a ricevere immagini dalla webcam. "
-        "Chiudi eventuali programmi che la stanno usando e controlla i permessi "
-        f"di Windows. Tentativi: {details}"
+        "Could not receive frames from the webcam. "
+        "Close any programs using it and check Windows permissions. "
+        f"Attempts: {details}"
     )
 
 
@@ -874,14 +874,14 @@ def main():
             fmt=pyvirtualcam.PixelFormat.BGR,
             backend="obs",
         )
-        print(f"[WEBCAM VIRTUALE] Attiva: {virtual_camera.device}")
+        print(f"[VIRTUAL WEBCAM] Active: {virtual_camera.device}")
     except Exception as exc:
         cap.release()
         face_landmarker.close()
         hand_landmarker.close()
         raise RuntimeError(
-            "Non riesco ad avviare OBS Virtual Camera. Chiudi OBS Studio o "
-            "disattiva la sua Virtual Camera, quindi riprova."
+            "Could not start OBS Virtual Camera. Close OBS Studio or disable "
+            "its Virtual Camera, then try again."
         ) from exc
 
     cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
