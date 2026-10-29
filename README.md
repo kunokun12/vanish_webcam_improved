@@ -1,34 +1,58 @@
+<div align="center">
+
+<img src="assets/vanish_icon.ico" alt="VanishCam icon" width="96">
+
 # VanishCam
 
-VanishCam is a Windows webcam app that makes you disappear from a live video feed. It supports two effects:
+### Become invisible on webcam with anime-inspired effects.
 
-- **Naruto Vanish** — joined hands trigger smoke and a substitution log.
-- **Goku Vanish** — two fingers touching your forehead trigger a teleport effect.
+![Platform](https://img.shields.io/badge/platform-Windows-0078D4?style=flat-square&logo=windows)
+![Python](https://img.shields.io/badge/python-3.x-3776AB?style=flat-square&logo=python)
+![Processing](https://img.shields.io/badge/camera%20processing-local-success?style=flat-square)
 
-Video is processed locally. VanishCam does not record or upload your camera feed. The first source-code launch may download Python packages and MediaPipe models.
+Use hand gestures to disappear from your live video feed with smoke, teleportation, and substitution effects.
 
-## Quick start: Windows
+[Quick Start](#quick-start) · [Effects](#effects) · [OBS Setup](#obs-and-virtual-camera) · [Troubleshooting](#troubleshooting)
 
-This repository currently contains the source code, not a prebuilt `VanishCam.exe`. The recommended way to run the latest version is to [run it from source](#run-from-source):
+</div>
 
-```powershell
-git clone https://github.com/kunokun12/vanish_webcam_improved.git
-cd vanish_webcam_improved
-AVVIA_LOCALE.bat
-```
+## Why VanishCam?
 
-If you already have a trusted prebuilt `VanishCam.exe`, Python is not required. The packaged app is configured to use [Unity Capture](https://github.com/schellingb/UnityCapture) for virtual-camera output by default, so install Unity Capture before launching it. To build your own executable, use `BUILD_WINDOWS.bat` as described [below](#build-the-windows-executable).
+- 🍃 **Naruto Vanish** — joined hands trigger smoke and a falling substitution log.
+- ⚡ **Goku Vanish** — two fingers touching your forehead trigger a teleport effect.
+- 🎥 **Streaming ready** — works with OBS Window Capture and Unity Capture.
+- 🔒 **Private by design** — video is processed locally and never uploaded.
 
-## Run from source
+<p align="center">
+  <img src="assets/substitution_log.png" alt="Naruto substitution log effect" width="420">
+</p>
+
+<details>
+<summary>Contents</summary>
+
+- [Quick Start](#quick-start)
+- [Launch Modes](#launch-modes)
+- [Effects](#effects)
+- [Controls](#controls)
+- [OBS and Virtual Camera](#obs-and-virtual-camera)
+- [Troubleshooting](#troubleshooting)
+- [Build the Windows Executable](#build-the-windows-executable)
+- [Development](#development)
+
+</details>
+
+## Quick Start
+
+This repository contains the source code, not a prebuilt `VanishCam.exe`.
 
 ### Requirements
 
 - Windows 10 or later
 - Python 3
 - A working webcam
-- Internet access on the first launch so the launcher can install dependencies and download models
+- Internet access on the first launch to install dependencies and download MediaPipe models
 
-Clone the repository and start the local preview:
+### Run from source
 
 ```powershell
 git clone https://github.com/kunokun12/vanish_webcam_improved.git
@@ -36,16 +60,18 @@ cd vanish_webcam_improved
 AVVIA_LOCALE.bat
 ```
 
-`AVVIA_LOCALE.bat` creates `.venv-local` automatically and installs the packages from `requirements.txt`. The app then opens a camera selector followed by an effect selector. Choose a camera, choose **Naruto Vanish** or **Goku Vanish**, and step out of frame for about four seconds while the background is captured.
+Choose a camera, select **Naruto Vanish** or **Goku Vanish**, then step out of frame for about four seconds while the background is captured.
 
-The required MediaPipe models are downloaded into `models/` the first time each effect is used. The models and generated build files are intentionally excluded from Git.
+> The first launch creates `.venv-local`, installs the packages from `requirements.txt`, and downloads the required models. Later launches reuse them.
 
-## Choose a launch mode
+If you already have a trusted prebuilt `VanishCam.exe`, Python is not required. Install [Unity Capture](https://github.com/schellingb/UnityCapture) first if you want virtual-camera output.
 
-- `AVVIA_LOCALE.bat` — normal local preview window.
-- `AVVIA_OBS.bat` — clean preview for OBS Window Capture; virtual-camera output is disabled.
-- `AVVIA_VIRTUAL.bat` — send the result through Unity Capture.
-- `BUILD_WINDOWS.bat` — build a new `dist/VanishCam.exe`.
+## Launch Modes
+
+- `AVVIA_LOCALE.bat` — normal local preview window
+- `AVVIA_OBS.bat` — clean preview for OBS Window Capture
+- `AVVIA_VIRTUAL.bat` — output through Unity Capture
+- `BUILD_WINDOWS.bat` — build `dist/VanishCam.exe`
 
 You can skip the selectors by passing options:
 
@@ -57,40 +83,48 @@ AVVIA_LOCALE.bat --camera 1 --width 1280 --height 720 --fps 30
 
 `--camera N` uses a specific webcam index. Omit it to show the camera selector.
 
-## Effects and gestures
+## Effects
 
-### Naruto Vanish
+### 🍃 Naruto Vanish
 
 1. Keep both hands visible.
 2. Bring your palms together with your fingers side by side; do not interlace them.
 3. The app replaces you with smoke and a falling wooden log.
 4. Press `R` to reappear.
 
-The effect sound is `assets/vanish.MP3`.
+Effect sound: `assets/vanish.MP3`
 
-### Goku Vanish
+### ⚡ Goku Vanish
 
 1. Hold your index and middle fingers against your forehead for about 0.25 seconds.
 2. You disappear with a teleport effect.
 3. Lower your hand, then repeat the gesture to reappear.
 
-The effect sound is `assets/goku-teleport-sound.mp3`. The hand can face sideways; good lighting and a clear view of the hand improve recognition.
+The hand can face sideways. Good lighting and a clear view of the hand improve recognition.
+
+Effect sound: `assets/goku-teleport-sound.mp3`
 
 ## Controls
 
-These keys work while the webcam window is active:
+**Camera**
 
 - `SPACE` — capture a new background
-- `R` — reappear
-- `V` — trigger the selected effect manually
-- `G` — show or hide gesture diagnostics
-- `M` — return to the effect selector
 - `F` — toggle fullscreen
+
+**Effects**
+
+- `V` — trigger the selected effect manually
+- `R` — reappear
+- `M` — return to the effect selector
+
+**Debugging and exit**
+
+- `G` — show or hide gesture diagnostics
 - `Q` or `ESC` — quit
 
-Gesture diagnostics are shown in a separate debug window or in the terminal. They are not sent to the clean preview or virtual-camera output.
+Gesture diagnostics appear in a separate debug window or in the terminal. They are never sent to the clean preview or virtual-camera output.
 
-## OBS and virtual-camera setup
+## OBS and Virtual Camera
 
 ### OBS Window Capture
 
@@ -99,11 +133,11 @@ Gesture diagnostics are shown in a separate debug window or in the terminal. The
 3. Select **Webcam - Preview**.
 4. Start the OBS Virtual Camera if you need to send the scene to another application.
 
-The preview contains the webcam and effects but no menus or debug markers. If you press `G`, diagnostics appear separately as **Webcam - Debug Preview**.
+The preview contains the webcam and effects but no menus or debug markers. Press `G` to show diagnostics separately as **Webcam - Debug Preview**.
 
 ### Unity Capture
 
-1. Install Unity Capture.
+1. Install [Unity Capture](https://github.com/schellingb/UnityCapture).
 2. Run `AVVIA_VIRTUAL.bat`.
 3. Select **Unity Video Capture** in the receiving application.
 
@@ -125,9 +159,9 @@ Improve the lighting, keep the hands inside the frame, and use `G` to inspect re
 
 ### The first launch is slow
 
-This is expected. The launcher may create the virtual environment, install dependencies, and download the required MediaPipe models. Later launches reuse those files.
+This is expected. The launcher may create the virtual environment, install dependencies, and download the required MediaPipe models.
 
-## Build the Windows executable
+## Build the Windows Executable
 
 Install Python 3, then run:
 
@@ -146,3 +180,7 @@ Install the dependencies in the local environment, then run the test suite with:
 ```
 
 The main application is in `vanish_cam.py`. Naruto effect rendering is in `naruto_effect.py`, and audio playback is in `vanish_sound.py`.
+
+## Project Status
+
+VanishCam is an experimental Windows webcam project. It works best with good lighting, a stable camera, and clearly visible hand gestures.
