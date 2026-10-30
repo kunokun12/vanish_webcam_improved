@@ -56,6 +56,8 @@ MODEL_URLS = {
 }
 
 CALIBRATION_SECONDS = 4.0
+SETUP_COUNTDOWN_SECONDS = 3.0
+BACKGROUND_READY_NOTICE_SECONDS = 2.0
 BACKGROUND_SAMPLE_SECONDS = 0.55
 VANISH_SECONDS = 3.6
 GOKU_EFFECT_SECONDS = 1.15
@@ -65,11 +67,59 @@ GESTURE_INTERVAL_SECONDS = 0.14
 
 @dataclass
 class AppState:
-    phase: str = "calibrating"
+    phase: str = "setup_countdown"
     calibration_started: float = 0.0
     vanish_started: float | None = None
     last_gesture_check: float = 0.0
     fullscreen: bool = False
+
+
+def draw_background_setup_overlay(
+    frame: np.ndarray,
+    phase: str,
+    remaining: int = 0,
+    progress: float = 0.0,
+) -> np.ndarray:
+    """Draw setup guidance on the local preview without changing its source frame."""
+    preview = frame.copy()
+    height, width = preview.shape[:2]
+    panel_width = min(620, width - 32)
+    panel_height = 172 if phase != "ready" else 118
+    left = max(16, (width - panel_width) // 2)
+    top = max(16, (height - panel_height) // 2)
+    right, bottom = left + panel_width, top + panel_height
+
+    panel = preview.copy()
+    cv2.rectangle(panel, (left, top), (right, bottom), (20, 25, 32), -1)
+    cv2.addWeighted(panel, 0.84, preview, 0.16, 0, preview)
+    cv2.rectangle(preview, (left, top), (right, bottom), (72, 91, 101), 1)
+
+    if phase == "setup_countdown":
+        heading, detail = "STEP OUT OF VIEW", "Background capture starts in"
+        accent = (112, 224, 191)
+        cv2.putText(preview, str(max(1, remaining)), (right - 72, top + 92),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.7, accent, 3, cv2.LINE_AA)
+    elif phase == "calibrating":
+        heading, detail = "CAPTURING BACKGROUND", "Keep the room empty and camera still"
+        accent = (112, 224, 191)
+    else:
+        heading, detail = "BACKGROUND READY", "Step back in  |  Space to recapture"
+        accent = (112, 224, 191)
+
+    cv2.putText(preview, heading, (left + 24, top + 42),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.72, (242, 246, 248), 2, cv2.LINE_AA)
+    cv2.putText(preview, detail, (left + 24, top + 76),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.52, (190, 203, 210), 1, cv2.LINE_AA)
+
+    if phase == "calibrating":
+        bar_left, bar_top, bar_right = left + 24, top + 112, right - 24
+        cv2.rectangle(preview, (bar_left, bar_top), (bar_right, bar_top + 8), (58, 68, 76), -1)
+        fill_right = bar_left + int((bar_right - bar_left) * min(1.0, max(0.0, progress)))
+        if fill_right > bar_left:
+            cv2.rectangle(preview, (bar_left, bar_top), (fill_right, bar_top + 8), accent, -1)
+        cv2.putText(preview, f"{max(0, remaining)} sec", (bar_left, top + 148),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.46, (190, 203, 210), 1, cv2.LINE_AA)
+    return preview
 
 
 @dataclass
@@ -1168,9 +1218,7 @@ def run_camera(args: argparse.Namespace, resources: ExitStack, mode: str) -> int
     cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
     cv2.resizeWindow(WINDOW_NAME, args.width, args.height)
 
-    state = AppState(
-        calibration_started=time.perf_counter(), fullscreen=args.fullscreen
-    )
+    state = AppState(fullscreen=args.fullscreen)
     if state.fullscreen:
         set_fullscreen(True)
 
@@ -1186,6 +1234,7 @@ def run_camera(args: argparse.Namespace, resources: ExitStack, mode: str) -> int
     virtual_camera = None
     virtual_camera_initialized = False
     calibration_remaining = None
+    background_ready_notice_until = 0.0
     last_gesture_report = 0.0
     gesture_overlay = False
     debug_window_open = False
@@ -1194,7 +1243,7 @@ def run_camera(args: argparse.Namespace, resources: ExitStack, mode: str) -> int
     last_joined_hands = False
     last_goku_result = GokuPoseResult()
     started = time.perf_counter()
-    print("[Webcam] Step out of frame for 4 seconds while the background is captured.")
+    print("[Webcam] Step out of frame. A 3-second countdown starts when the preview opens, then the background is captured for 4 seconds.")
     print("[Webcam] Window controls: SPACE new background, R reappear, V disappear, G gesture debug, M mode menu, F fullscreen, Q quit.")
 
     try:
@@ -1234,7 +1283,18 @@ def run_camera(args: argparse.Namespace, resources: ExitStack, mode: str) -> int
                     vanished_frame = None
                     effect_sound.play()
 
-            if state.phase == "calibrating":
+            if state.phase == "setup_countdown":
+                if state.calibration_started <= 0:
+                    state.calibration_started = now
+                elapsed = now - state.calibration_started
+                if elapsed >= SETUP_COUNTDOWN_SECONDS:
+                    state.phase = "calibrating"
+                    state.calibration_started = now
+                    calibration_remaining = None
+
+            if state.phase == "setup_countdown":
+                display = camera_frame
+            elif state.phase == "calibrating":
                 elapsed = now - state.calibration_started
                 remaining = max(0, int(np.ceil(CALIBRATION_SECONDS - elapsed)))
                 if remaining != calibration_remaining:
@@ -1250,10 +1310,11 @@ def run_camera(args: argparse.Namespace, resources: ExitStack, mode: str) -> int
                         background = camera_frame.copy()
                     background_samples.clear()
                     state.phase = "ready"
+                    background_ready_notice_until = now + BACKGROUND_READY_NOTICE_SECONDS
                     print("[Webcam] Background ready. You can step back into frame.")
                 display = camera_frame
 
-            elif background is None:
+            elif background is None and state.phase != "setup_countdown":
                 state.phase = "calibrating"
                 state.calibration_started = now
                 display = camera_frame
@@ -1362,10 +1423,28 @@ def run_camera(args: argparse.Namespace, resources: ExitStack, mode: str) -> int
 
             if virtual_camera is not None:
                 send_virtual_frame(virtual_camera, display)
-            # The named preview and virtual camera always receive the clean
-            # frame. Diagnostics are rendered into a separate optional window
-            # so OBS can never capture the debug pixels by accident.
-            cv2.imshow(WINDOW_NAME, display)
+            # Keep setup guidance in the local window only; the virtual camera
+            # continues to receive the clean webcam/effect frame.
+            preview_display = display
+            if state.phase in ("setup_countdown", "calibrating"):
+                phase_elapsed = now - state.calibration_started
+                if state.phase == "setup_countdown":
+                    countdown = max(1, int(np.ceil(SETUP_COUNTDOWN_SECONDS - phase_elapsed)))
+                    preview_display = draw_background_setup_overlay(
+                        display, "setup_countdown", remaining=countdown
+                    )
+                else:
+                    capture_elapsed = now - state.calibration_started
+                    capture_remaining = max(0, int(np.ceil(CALIBRATION_SECONDS - capture_elapsed)))
+                    preview_display = draw_background_setup_overlay(
+                        display,
+                        "calibrating",
+                        remaining=capture_remaining,
+                        progress=capture_elapsed / CALIBRATION_SECONDS,
+                    )
+            elif now < background_ready_notice_until:
+                preview_display = draw_background_setup_overlay(display, "ready")
+            cv2.imshow(WINDOW_NAME, preview_display)
             if gesture_overlay:
                 if not debug_window_open:
                     open_debug_window(width, height)
@@ -1383,16 +1462,17 @@ def run_camera(args: argparse.Namespace, resources: ExitStack, mode: str) -> int
             if key in (ord("q"), 27):
                 break
             if key == ord(" "):
-                state.phase = "calibrating"
+                state.phase = "setup_countdown"
                 state.calibration_started = now
                 state.vanish_started = None
+                background_ready_notice_until = 0.0
                 log_anchor = None
                 last_mask = None
                 last_mask_at = float("-inf")
                 vanished_frame = None
                 background_samples.clear()
                 calibration_remaining = None
-                print("[Webcam] Step out of frame for 4 seconds while the new background is captured.")
+                print("[Webcam] New background capture starts in 3 seconds, then runs for 4 seconds.")
             elif key == ord("r") and background is not None:
                 if background is not None:
                     if mode == "goku":

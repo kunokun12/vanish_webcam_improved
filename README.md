@@ -60,7 +60,7 @@ cd vanish_webcam_improved
 AVVIA_LOCALE.bat
 ```
 
-Choose a camera, select **Naruto Vanish** or **Goku Vanish**, then step out of frame for about four seconds while the background is captured.
+Choose a camera, select **Naruto Vanish** or **Goku Vanish**, then follow the preview prompt: step out during the three-second countdown and keep the room empty for the four-second background capture.
 
 > The first launch creates `.venv-local`, installs the packages from `requirements.txt`, and downloads the required models. Later launches reuse them.
 
